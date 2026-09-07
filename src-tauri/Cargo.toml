@@ -1,6 +1,6 @@
 [package]
 name = "morim"
-version = "1.0.3"
+version = "1.0.4"
 description = "Morim - Open Source offline Kahoot alternative"
 authors = ["HonoravelMacho"]
 edition = "2021"
@@ -30,7 +30,7 @@ uuid = { version = "1.8", features = ["v4", "serde"] }
 futures-util = "0.3"
 tokio-tungstenite = { version = "0.23", features = ["native-tls"] }
 tungstenite = "0.23"
-local-ip-address = "0.2"
+default-net = "0.22"
 anyhow = "1.0"
 thiserror = "1.0"
 tracing = "0.1"

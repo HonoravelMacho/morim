@@ -12,7 +12,16 @@ use axum::{
     Json, Router,
 };
 use futures_util::{SinkExt, StreamExt, TryStreamExt};
-use local_ip_address::local_ip;
+fn get_local_ip_addr() -> Result<std::net::IpAddr> {
+    let iface = default_net::get_default_interface()
+        .map_err(|e| anyhow::anyhow!("Failed to get default interface: {e}"))?;
+    iface
+        .ipv4
+        .into_iter()
+        .find(|a| !a.addr.is_loopback())
+        .map(|a| std::net::IpAddr::V4(a.addr))
+        .ok_or_else(|| anyhow::anyhow!("No non-loopback IPv4 address found"))
+}
 use parking_lot::RwLock;
 use qrcode::QrCode;
 use qrcode::render::svg;
@@ -159,7 +168,7 @@ impl AppState {
 pub async fn start_server(state: Arc<AppState>, app_handle: tauri::AppHandle) -> Result<()> {
     state.load_quizzes().await?;
 
-    let ip = local_ip().context("Failed to get local IP")?;
+    let ip = get_local_ip_addr().context("Failed to get local IP")?;
     let addr = SocketAddr::new(ip, 8080);
     *state.local_ip.write() = ip.to_string();
     *state.server_url.write() = format!("http://{}:8080", ip);
