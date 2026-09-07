@@ -50,7 +50,7 @@
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/HonoravelMacho/morin.git
+git clone https://github.com/HonoravelMacho/morim.git
 cd morin
 
 # 2. Execute em modo desenvolvimento
@@ -195,7 +195,7 @@ Se você quiser adicionar um novo tipo de pergunta:
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/HonoravelMacho/morin.git
+git clone https://github.com/HonoravelMacho/morim.git
 cd morin
 
 # 2. Instale dependências do sistema
@@ -218,7 +218,7 @@ cargo tauri build
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/HonoravelMacho/morin.git
+git clone https://github.com/HonoravelMacho/morim.git
 cd morin
 
 # 2. Instale dependências
@@ -232,7 +232,7 @@ cargo tauri build
 
 ```powershell
 # 1. Clone o repositório
-git clone https://github.com/HonoravelMacho/morin.git
+git clone https://github.com/HonoravelMacho/morim.git
 cd morin
 
 # 2. Instale Rust
