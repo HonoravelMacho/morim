@@ -17,7 +17,7 @@ pub struct Question {
     pub id: Uuid,
     pub text: String,
     pub question_type: QuestionType,
-    pub options: Vec<Option>,
+    pub options: Vec<QuizOption>,
     pub correct_answer: Vec<usize>,
     pub time_limit: u32,
     pub points: u32,
@@ -35,7 +35,7 @@ pub enum QuestionType {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Option {
+pub struct QuizOption {
     pub id: Uuid,
     pub text: String,
     pub is_correct: bool,

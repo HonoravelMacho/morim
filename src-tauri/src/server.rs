@@ -24,7 +24,7 @@ use std::{
     sync::Arc,
     time::Duration,
 };
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 use tokio::sync::broadcast;
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -225,12 +225,14 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
     let mut player_id: Option<Uuid> = None;
     let mut current_pin: Option<String> = None;
 
-    let (mut sender, mut receiver) = socket.split();
+    let (sender, mut receiver) = socket.split();
+    let sender = Arc::new(tokio::sync::Mutex::new(sender));
 
+    let sender_clone = sender.clone();
     let send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv().await {
             if let Ok(json) = serde_json::to_string(&msg) {
-                if sender.send(Message::Text(json.into())).await.is_err() {
+                if sender_clone.lock().await.send(Message::Text(json.into())).await.is_err() {
                     break;
                 }
             }
@@ -254,14 +256,14 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
                                 
                                 let quiz = state.get_quiz(session_mut.quiz_id).unwrap_or_else(|| Quiz::new("Unknown".to_string(), "".to_string()));
                                 
-                                let _ = sender.send(Message::Text(serde_json::to_string(&WsMessage::GameJoined {
+                                let _ = sender.lock().await.send(Message::Text(serde_json::to_string(&WsMessage::GameJoined {
                                     session: session_mut,
                                     player_id: player.id,
                                 }).unwrap())).await;
                                 
                                 state.broadcast(WsMessage::PlayerJoined { player });
                             } else {
-                                let _ = sender.send(Message::Text(serde_json::to_string(&WsMessage::Error {
+                                let _ = sender.lock().await.send(Message::Text(serde_json::to_string(&WsMessage::Error {
                                     message: "Invalid game PIN".to_string(),
                                 }).unwrap())).await;
                             }
@@ -305,29 +307,29 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
                         }
                         WsMessage::RequestQuizList => {
                             let quizzes = state.list_quizzes();
-                            let _ = sender.send(Message::Text(serde_json::to_string(&WsMessage::QuizList { quizzes }).unwrap())).await;
+                            let _ = sender.lock().await.send(Message::Text(serde_json::to_string(&WsMessage::QuizList { quizzes }).unwrap())).await;
                         }
                         WsMessage::CreateQuiz { title, description } => {
                             let mut quiz = Quiz::new(title, description);
                             if let Err(e) = state.save_quiz(&quiz) {
-                                let _ = sender.send(Message::Text(serde_json::to_string(&WsMessage::Error {
+                                let _ = sender.lock().await.send(Message::Text(serde_json::to_string(&WsMessage::Error {
                                     message: format!("Failed to create quiz: {}", e),
                                 }).unwrap())).await;
                             } else {
-                                let _ = sender.send(Message::Text(serde_json::to_string(&WsMessage::QuizCreated { quiz: quiz.clone() }).unwrap())).await;
+                                let _ = sender.lock().await.send(Message::Text(serde_json::to_string(&WsMessage::QuizCreated { quiz: quiz.clone() }).unwrap())).await;
                             }
                         }
                         WsMessage::DeleteQuiz { quiz_id } => {
                             if let Err(e) = state.delete_quiz(quiz_id) {
-                                let _ = sender.send(Message::Text(serde_json::to_string(&WsMessage::Error {
+                                let _ = sender.lock().await.send(Message::Text(serde_json::to_string(&WsMessage::Error {
                                     message: format!("Failed to delete quiz: {}", e),
                                 }).unwrap())).await;
                             } else {
-                                let _ = sender.send(Message::Text(serde_json::to_string(&WsMessage::QuizDeleted { quiz_id }).unwrap())).await;
+                                let _ = sender.lock().await.send(Message::Text(serde_json::to_string(&WsMessage::QuizDeleted { quiz_id }).unwrap())).await;
                             }
                         }
                         WsMessage::Ping => {
-                            let _ = sender.send(Message::Text(serde_json::to_string(&WsMessage::Pong).unwrap())).await;
+                            let _ = sender.lock().await.send(Message::Text(serde_json::to_string(&WsMessage::Pong).unwrap())).await;
                         }
                         _ => {}
                     }
@@ -530,8 +532,8 @@ async fn upload_handler(State(state): State<Arc<AppState>>, mut multipart: Multi
     let allowed_podiums = ["mp3", "wav", "ogg", "m4a", "json", "css", "js", "png", "jpg", "gif", "svg"];
 
     let (target_dir, allowed) = match asset_type.as_str() {
-        "avatars" => (state.assets_dir.join("avatars"), allowed_avatars),
-        "podiums" => (state.assets_dir.join("podiums"), allowed_podiums),
+        "avatars" => (state.assets_dir.join("avatars"), &allowed_avatars[..]),
+        "podiums" => (state.assets_dir.join("podiums"), &allowed_podiums[..]),
         _ => return Err((StatusCode::BAD_REQUEST, "Invalid asset type".to_string())),
     };
 
