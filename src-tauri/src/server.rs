@@ -165,6 +165,44 @@ impl AppState {
     }
 }
 
+/// Localiza a pasta do frontend mobile (servida via HTTP para os jogadores).
+/// Funciona em dev (cargo tauri dev) e no app instalado (.deb), onde os
+/// arquivos vao para o diretorio de resources do bundle.
+fn resolve_mobile_dir(app_handle: &tauri::AppHandle) -> PathBuf {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
+    if let Ok(resource_dir) = app_handle.path().resource_dir() {
+        candidates.push(resource_dir.join("mobile"));
+        candidates.push(resource_dir.join("src").join("mobile"));
+        candidates.push(resource_dir.join("_up_").join("src").join("mobile"));
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            candidates.push(exe_dir.join("mobile"));
+            candidates.push(exe_dir.join("../lib/morim/mobile"));
+        }
+    }
+    if let Ok(cwd) = std::env::current_dir() {
+        candidates.push(cwd.join("src").join("mobile"));
+        candidates.push(cwd.join("mobile"));
+    }
+    // Layout do repositorio quando o cwd e src-tauri/
+    candidates.push(PathBuf::from("../src/mobile"));
+
+    for candidate in &candidates {
+        if candidate.join("index.html").exists() {
+            info!("Servindo frontend mobile de: {:?}", candidate);
+            return candidate.clone();
+        }
+    }
+
+    warn!(
+        "Diretorio do frontend mobile nao encontrado (tentados: {:?}). Servindo diretorio vazio.",
+        candidates
+    );
+    candidates.into_iter().next().unwrap_or_else(|| PathBuf::from("src/mobile"))
+}
+
 pub async fn start_server(state: Arc<AppState>, app_handle: tauri::AppHandle) -> Result<()> {
     state.load_quizzes().await?;
 
@@ -191,7 +229,7 @@ pub async fn start_server(state: Arc<AppState>, app_handle: tauri::AppHandle) ->
         .allow_methods(Any)
         .allow_headers(Any);
 
-    let mobile_dir = std::path::PathBuf::from("/home/tiagorabelo/morim/src/mobile");
+    let mobile_dir = resolve_mobile_dir(&app_handle);
     
     let app = Router::new()
         .route("/ws", get(ws_handler))

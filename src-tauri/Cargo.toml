@@ -1,6 +1,6 @@
 [package]
 name = "morim"
-version = "1.0.4"
+version = "1.0.5"
 description = "Morim - Open Source offline Kahoot alternative"
 authors = ["HonoravelMacho"]
 edition = "2021"

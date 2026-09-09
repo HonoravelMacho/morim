@@ -1,7 +1,7 @@
-use crate::models::Quiz;
+use crate::models::{Avatar, PodiumAsset, PodiumAssetType, Quiz};
 use crate::server::AppState;
 use crate::utils::get_app_data_dir;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::sync::Arc;
 use tauri::{command, State};
 use uuid::Uuid;
@@ -28,17 +28,95 @@ pub async fn list_quizzes(state: State<'_, Arc<AppState>>) -> Result<Vec<crate::
     Ok(state.list_quizzes())
 }
 
-#[derive(Deserialize)]
-pub struct CreateQuizRequest {
-    pub title: String,
-    pub description: String,
+#[command]
+pub async fn create_quiz(
+    state: State<'_, Arc<AppState>>,
+    title: String,
+    description: String,
+) -> Result<Quiz, String> {
+    let quiz = Quiz::new(title, description);
+    state.save_quiz(&quiz).map_err(|e| e.to_string())?;
+    Ok(quiz)
 }
 
 #[command]
-pub async fn create_quiz(state: State<'_, Arc<AppState>>, request: CreateQuizRequest) -> Result<Quiz, String> {
-    let mut quiz = Quiz::new(request.title, request.description);
-    state.save_quiz(&quiz).map_err(|e| e.to_string())?;
-    Ok(quiz)
+pub async fn get_quiz(state: State<'_, Arc<AppState>>, id: Uuid) -> Result<Quiz, String> {
+    state
+        .get_quiz(id)
+        .ok_or_else(|| "Quiz not found".to_string())
+}
+
+#[command]
+pub async fn list_avatars(state: State<'_, Arc<AppState>>) -> Result<Vec<Avatar>, String> {
+    let mut avatars = Vec::new();
+    let avatars_dir = state.assets_dir.join("avatars");
+    if avatars_dir.exists() {
+        let entries = std::fs::read_dir(&avatars_dir).map_err(|e| e.to_string())?;
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if let Some(ext) = path.extension() {
+                let ext_str = ext.to_string_lossy().to_lowercase();
+                if matches!(
+                    ext_str.as_str(),
+                    "png" | "jpg" | "jpeg" | "gif" | "svg" | "webp"
+                ) {
+                    let stem = path
+                        .file_stem()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
+                    avatars.push(Avatar {
+                        id: stem.clone(),
+                        name: stem,
+                        file_path: format!(
+                            "/assets/avatars/{}",
+                            path.file_name().unwrap_or_default().to_string_lossy()
+                        ),
+                        file_type: ext_str,
+                    });
+                }
+            }
+        }
+    }
+    Ok(avatars)
+}
+
+#[command]
+pub async fn list_podiums(state: State<'_, Arc<AppState>>) -> Result<Vec<PodiumAsset>, String> {
+    let mut podiums = Vec::new();
+    let podiums_dir = state.assets_dir.join("podiums");
+    if podiums_dir.exists() {
+        let entries = std::fs::read_dir(&podiums_dir).map_err(|e| e.to_string())?;
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if let Some(ext) = path.extension() {
+                let ext_str = ext.to_string_lossy().to_lowercase();
+                let asset_type = if matches!(ext_str.as_str(), "mp3" | "wav" | "ogg" | "m4a") {
+                    PodiumAssetType::Audio
+                } else if matches!(ext_str.as_str(), "json" | "css" | "js") {
+                    PodiumAssetType::Theme
+                } else {
+                    PodiumAssetType::Animation
+                };
+                let stem = path
+                    .file_stem()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+                podiums.push(PodiumAsset {
+                    id: stem.clone(),
+                    name: stem,
+                    file_path: format!(
+                        "/assets/podiums/{}",
+                        path.file_name().unwrap_or_default().to_string_lossy()
+                    ),
+                    file_type: ext_str,
+                    asset_type,
+                });
+            }
+        }
+    }
+    Ok(podiums)
 }
 
 #[command]

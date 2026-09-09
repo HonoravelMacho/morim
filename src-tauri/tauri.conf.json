@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Morim",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "identifier": "com.morim.app",
   "build": {
     "frontendDist": "../src",
@@ -10,6 +10,7 @@
     "beforeBuildCommand": ""
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "Morim - Sala do Professor",
@@ -29,6 +30,11 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "resources": [
+      "../src/mobile",
+      "../assets",
+      "../quizzes"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -36,17 +42,5 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
-  },
-  "plugins": {
-    "fs": {
-      "scope": {
-        "allowedPaths": [
-          "$APPDATA/morim/*",
-          "$APPDATA/morim/assets/avatars/*",
-          "$APPDATA/morim/assets/podiums/*",
-          "$APPDATA/morim/quizzes/*"
-        ]
-      }
-    }
   }
 }

@@ -1,5 +1,8 @@
 'use strict';
 
+// Tauri v2 com withGlobalTauri: usa o objeto global injetado pelo WebView.
+const invoke = (...args) => window.__TAURI__.core.invoke(...args);
+
 class PresenterApp {
     constructor() {
         this.ws = null;

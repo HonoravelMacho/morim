@@ -1,7 +1,7 @@
-import { invoke } from '@tauri-apps/api/core';
-import { listen, emit } from '@tauri-apps/api/event';
-import { open } from '@tauri-apps/api/dialog';
-import { BaseDirectory, readDir, writeFile, removeFile, createDir } from '@tauri-apps/api/fs';
+// Tauri v2 com withGlobalTauri: usa o objeto global injetado pelo WebView.
+// (Sem bundler/npm: imports bare '@tauri-apps/*' nao resolvem offline.)
+const invoke = (...args) => window.__TAURI__.core.invoke(...args);
+const listen = (...args) => window.__TAURI__.event.listen(...args);
 
 class MorimApp {
     constructor() {

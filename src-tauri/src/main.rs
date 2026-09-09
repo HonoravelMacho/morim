@@ -1,7 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use morim::server::{start_server, AppState};
-use morim::commands::{get_local_ip, get_server_url, list_quizzes, create_quiz, delete_quiz, open_data_directory};
+use crate::server::{start_server, AppState};
+use crate::commands::{
+    create_quiz, delete_quiz, get_local_ip, get_quiz, get_server_url, list_avatars,
+    list_podiums, list_quizzes, open_data_directory,
+};
 use std::sync::Arc;
 use tauri::Manager;
 
@@ -39,8 +42,11 @@ fn main() {
             get_local_ip,
             get_server_url,
             list_quizzes,
+            get_quiz,
             create_quiz,
             delete_quiz,
+            list_avatars,
+            list_podiums,
             open_data_directory
         ])
         .run(tauri::generate_context!())
